@@ -158,14 +158,29 @@ public class NFAImpl implements NFA {
         return u;
     }
 
+    /**
+     * see VO 2021WS-NFA p.22/24
+     *
+     * A ∩ -B == -(-A ∪ -B)
+     */
     @Override
     public NFA intersection(NFA a) {
-        return this.complement().union(a.complement()).complement();
+        var res = this.complement().union(a.complement()).complement();
+        debug("%s\n∩\n%s\n=>\n%s", this, a, res);
+        return res;
     }
 
+    /**
+     * see VO 2021WS-NFA p.22/24
+     *
+     * A \ B == A ∩ -B == -(-A ∪ --B) == -(-A ∪ B)
+     */
     @Override
     public NFA minus(NFA a) {
-        return null;
+        var res = this.intersection(a.complement());
+        //var res = this.complement().union(a).complement();
+        debug("%s\n\\\n%s\n=>\n%s", this, a, res);
+        return res;
     }
 
     @Override
