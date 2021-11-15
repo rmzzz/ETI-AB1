@@ -12,7 +12,7 @@ public class Sets {
 
     public static <T> Set<T> intersection(Set<T> a, Set<T> b) {
         Set<T> u = new HashSet<>(a);
-        u.removeAll(b);
+        u.retainAll(b);
         return u;
     }
 }

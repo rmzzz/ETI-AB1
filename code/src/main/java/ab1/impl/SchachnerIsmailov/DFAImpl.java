@@ -4,6 +4,7 @@ import ab1.DFA;
 import ab1.NFA;
 import ab1.exceptions.IllegalCharacterException;
 
+import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -55,4 +56,28 @@ public class DFAImpl extends NFAImpl implements DFA {
     public DFA toDFA() {
         return this;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof NFA)) ///< this is correct, DFA can be compared against NFA
+            return false;
+        DFA dfa = ((NFA) o).toDFA();
+
+        boolean isEqual = numStates == dfa.getNumStates()
+                && initialState == dfa.getInitialState()
+                && getAlphabet().equals(dfa.getAlphabet())
+                && getAcceptingStates().equals(dfa.getAcceptingStates())
+                && Arrays.deepEquals(transitions, dfa.getTransitions());
+        debug("%s\n==?\n%s\n=>%b", this, dfa, isEqual);
+        return isEqual;
+    }
+
+    @Override
+    public String toString() {
+        return toString("M=(Q={0..%d}, Σ=%s, δ=%s, q₀=%s, F=%s)");
+    }
+
+
 }

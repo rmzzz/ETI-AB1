@@ -4,6 +4,7 @@ import ab1.DFA;
 import ab1.NFA;
 import ab1.exceptions.IllegalCharacterException;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -93,6 +94,7 @@ public class NFAImpl implements NFA {
     void copyTransitions(Set<Character>[][] delta) {
         copyTransitions(delta, 0);
     }
+
     void copyTransitions(Set<Character>[][] delta, int stateShift) {
         for (int fromState = 0; fromState < delta.length; fromState++) {
             for (int toState = 0; toState < delta[fromState].length; toState++) {
@@ -160,7 +162,7 @@ public class NFAImpl implements NFA {
 
     /**
      * see VO 2021WS-NFA p.22/24
-     *
+     * <p>
      * A ∩ -B == -(-A ∪ -B)
      */
     @Override
@@ -172,7 +174,7 @@ public class NFAImpl implements NFA {
 
     /**
      * see VO 2021WS-NFA p.22/24
-     *
+     * <p>
      * A \ B == A ∩ -B == -(-A ∪ --B) == -(-A ∪ B)
      */
     @Override
@@ -228,7 +230,7 @@ public class NFAImpl implements NFA {
         // add epsilon transition from new init to old init
         res.setTransition(newInitState, EPS, initialState);
         // add epsilon transitions from accepting states back to init
-        for(int f : acceptingStates) {
+        for (int f : acceptingStates) {
             res.setTransition(f, EPS, newInitState);
         }
         debug("*\n%s\n=>\n%s", this, res);
@@ -242,12 +244,17 @@ public class NFAImpl implements NFA {
         return res;
     }
 
-    /**
-     * see 2021WS-NFA p16/24 -  Iterative Transformation NFA zu DFA
-     * @return DFA
-     */
     @Override
     public DFA toDFA() {
+        return iterativeToDFA();
+    }
+
+    /**
+     * see 2021WS-NFA p16/24 -  Iterative Transformation NFA zu DFA
+     *
+     * @return DFA
+     */
+    DFA iterativeToDFA() {
         AtomicInteger stateCounter = new AtomicInteger(0);
         Function<Set<Integer>, Integer> qGenerator = k -> stateCounter.getAndIncrement();
         Map<Set<Integer>, Integer> s2q = new HashMap<>();
@@ -255,31 +262,34 @@ public class NFAImpl implements NFA {
         Map<Integer, Map<Character, Integer>> qaq1 = new HashMap<>();
         Set<Integer> F1 = new HashSet<>();
         Queue<Set<Integer>> toDefine = new LinkedList<>();
-        Set<Integer> s0 = Sets.union(Set.of(initialState), deltaSearch(initialState, s -> s.contains(EPS)));
-        toDefine.add(s0);
-        Integer q0 = s2q.computeIfAbsent(s0, qGenerator);
+        Set<Integer> sSet0 = Sets.union(Set.of(initialState), deltaSearch(initialState, s -> s.contains(EPS)));
+        toDefine.add(sSet0);
+        Integer q0 = s2q.computeIfAbsent(sSet0, qGenerator);
+        if (!Sets.intersection(sSet0, acceptingStates).isEmpty()) {
+            F1.add(q0);
+        }
         while (!toDefine.isEmpty()) {
             Set<Integer> sSet = toDefine.poll();
             Integer q = s2q.computeIfAbsent(sSet, qGenerator);
             Map<Character, Integer> qTransitions = qaq1.computeIfAbsent(q, k -> new LinkedHashMap<>());
             Set<Character> a = new TreeSet<>();
             deltaSearch(sSet, s -> {
-                for(Character c : s) {
-                    if(c != EPS) {
+                for (Character c : s) {
+                    if (c != EPS) {
                         a.add(c);
                     }
                 }
                 return false;
             });
-            for(Character c : a) {
+            for (Character c : a) {
                 Set<Integer> sSet1 = deltaSearch(sSet, s -> s.contains(c));
-                if(!sSet1.isEmpty()) {
+                if (!sSet1.isEmpty()) {
                     Integer q1 = s2q.computeIfAbsent(sSet1, qGenerator);
                     qTransitions.put(c, q1);
-                    if(!qaq1.containsKey(q1)) {
+                    if (!qaq1.containsKey(q1)) {
                         toDefine.add(sSet1);
                     }
-                    if(!Sets.intersection(sSet1, acceptingStates).isEmpty()) {
+                    if (!Sets.intersection(sSet1, acceptingStates).isEmpty()) {
                         F1.add(q1);
                     }
                 }
@@ -287,9 +297,9 @@ public class NFAImpl implements NFA {
         }
 
         var dfa = new DFAImpl(stateCounter.get(), alphabet, F1, q0);
-        for(Integer q : qaq1.keySet()) {
+        for (Integer q : qaq1.keySet()) {
             var aq1 = qaq1.get(q);
-            for(var transition : aq1.entrySet()) {
+            for (var transition : aq1.entrySet()) {
                 Character a = transition.getKey();
                 Integer q1 = transition.getValue();
                 dfa.setTransition(q, a, q1);
@@ -391,7 +401,7 @@ public class NFAImpl implements NFA {
 
     @Override
     public boolean subSetOf(NFA b) {
-        return false;
+        return minus(b).acceptsNothing();
     }
 
     @Override
@@ -400,17 +410,16 @@ public class NFAImpl implements NFA {
             return true;
         if (!(o instanceof NFA))
             return false;
-        NFA nfa = (NFA) o;
-
-        // TODO
-        //nfa.getAlphabet()
-        return false;
+        return toDFA().equals(o);
     }
 
     @Override
     public String toString() {
-        return String.format("N=(S={0..%d}, Σ=%s, δ=%s, s0=%s, F=%s)",
-                numStates-1,
+        return toString("N=(S={0..%d}, Σ=%s, δ=%s, s₀=%s, F=%s)");
+    }
+    protected String toString(String format) {
+        return String.format(format,
+                numStates - 1,
                 alphabet.stream().map(String::valueOf)
                         .collect(Collectors.joining(",", "{", "}")),
                 transitionsToStrings().stream()
@@ -423,9 +432,9 @@ public class NFAImpl implements NFA {
     protected List<String> transitionsToStrings() {
         List<String> strs = new LinkedList<>();
         for (int from = 0; from < transitions.length; from++) {
-            for(int to = 0; to < transitions[from].length; to++) {
+            for (int to = 0; to < transitions[from].length; to++) {
                 Set<Character> s = transitions[from][to];
-                if(s != null && !s.isEmpty()) {
+                if (s != null && !s.isEmpty()) {
                     strs.add(s.stream().map(a -> a == EPS ? "ϵ" : a.toString())
                             .collect(Collectors.joining(",", "(" + from + ",{", "}," + to + ")")));
                 }
@@ -433,6 +442,7 @@ public class NFAImpl implements NFA {
         }
         return strs;
     }
+
     static void debug(String msg, Object... params) {
         System.out.printf("DEBUG:\n" + msg + "\n", params);
     }
