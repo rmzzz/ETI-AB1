@@ -408,9 +408,10 @@ public class NFAImpl implements NFA {
     public boolean equals(Object o) {
         if (this == o)
             return true;
-        if (!(o instanceof NFA))
+        if (!(o instanceof NFA nfa))
             return false;
-        return toDFA().equals(o);
+        //return toDFA().equals(o);
+        return subSetOf(nfa) && nfa.subSetOf(this);
     }
 
     @Override
@@ -444,6 +445,6 @@ public class NFAImpl implements NFA {
     }
 
     static void debug(String msg, Object... params) {
-        System.out.printf("DEBUG:\n" + msg + "\n", params);
+        //ystem.out.printf("DEBUG:\n" + msg + "\n", params);
     }
 }

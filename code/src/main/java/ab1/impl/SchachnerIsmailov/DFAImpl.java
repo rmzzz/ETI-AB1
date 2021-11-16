@@ -57,22 +57,22 @@ public class DFAImpl extends NFAImpl implements DFA {
         return this;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (!(o instanceof NFA)) ///< this is correct, DFA can be compared against NFA
-            return false;
-        DFA dfa = ((NFA) o).toDFA();
-
-        boolean isEqual = numStates == dfa.getNumStates()
-                && initialState == dfa.getInitialState()
-                && getAlphabet().equals(dfa.getAlphabet())
-                && getAcceptingStates().equals(dfa.getAcceptingStates())
-                && Arrays.deepEquals(transitions, dfa.getTransitions());
-        debug("%s\n==?\n%s\n=>%b", this, dfa, isEqual);
-        return isEqual;
-    }
+//    @Override
+//    public boolean equals(Object o) {
+//        if (this == o)
+//            return true;
+//        if (!(o instanceof NFA)) ///< this is correct, DFA can be compared against NFA
+//            return false;
+//        DFA dfa = ((NFA) o).toDFA();
+//
+//        boolean isEqual = numStates == dfa.getNumStates()
+//                && initialState == dfa.getInitialState()
+//                && getAlphabet().equals(dfa.getAlphabet())
+//                && getAcceptingStates().equals(dfa.getAcceptingStates())
+//                && Arrays.deepEquals(transitions, dfa.getTransitions());
+//        debug("%s\n==?\n%s\n=>%b", this, dfa, isEqual);
+//        return isEqual;
+//    }
 
     @Override
     public String toString() {
