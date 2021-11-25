@@ -1,16 +1,26 @@
 package ab1;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import ab1.Ab1;
+import ab1.NFA;
+import ab1.DFA;
 
 import ab1.impl.SchachnerIsmailov.Ab1Impl;
 
@@ -1194,6 +1204,17 @@ public class Ab1Tests {
 		////////////////////////
 
 		n = n8.complement();
+		assertFalse(n.acceptsNothing());
+		assertTrue(n.acceptsEpsilon());
+		assertFalse(n.acceptsEpsilonOnly());
+		assertTrue(n.accepts("a"));
+		assertTrue(n.accepts("aa"));
+		assertFalse(n.accepts("ab"));
+		assertTrue(n.accepts("abc"));
+
+		////////////////////////
+
+		n = n9.complement();
 		assertFalse(n.acceptsNothing());
 		assertTrue(n.acceptsEpsilon());
 		assertFalse(n.acceptsEpsilonOnly());
