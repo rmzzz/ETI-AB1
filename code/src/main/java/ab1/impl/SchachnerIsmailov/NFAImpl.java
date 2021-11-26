@@ -4,6 +4,7 @@ import ab1.DFA;
 import ab1.NFA;
 import ab1.exceptions.IllegalCharacterException;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -390,17 +391,18 @@ public class NFAImpl implements NFA {
     boolean acceptsAnyNonEpsilon() {
         Set<Integer> fringe = Sets.union(Set.of(initialState), deltaSearch(initialState, s -> s.contains(EPS)));
 
-        while(true) {
+        while (true) {
             Set<Integer> prev = fringe;
             fringe = deltaSearch(fringe, s -> s.stream().anyMatch(c -> c != EPS));
             if (fringe.isEmpty())
                 return false;
-            if(isAcceptingState(fringe))
+            if (isAcceptingState(fringe))
                 return true;
-            if(fringe.equals(prev))
+            if (fringe.equals(prev))
                 return false;
         }
     }
+
     boolean acceptsAnyNonEpsilonX() {
         Set<Character> symbols = new HashSet<>();
         Predicate<Set<Character>> nonEpsilonPredicate = s -> {
@@ -488,7 +490,15 @@ public class NFAImpl implements NFA {
             return true;
         if (!(o instanceof NFA nfa))
             return false;
-        //return toDFA().equals(o);
+
+        //shortcut - if all properties are same
+        if (numStates == nfa.getNumStates() && alphabet.equals(nfa.getAlphabet())
+                && acceptingStates.equals(nfa.getAcceptingStates())
+                && Arrays.deepEquals(transitions, nfa.getTransitions())) {
+            return true;
+        }
+
+        // general case - FA are equal if they are subSets of each other
         return subSetOf(nfa) && nfa.subSetOf(this);
     }
 
