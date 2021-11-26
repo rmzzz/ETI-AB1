@@ -4,7 +4,6 @@ import ab1.DFA;
 import ab1.NFA;
 import ab1.exceptions.IllegalCharacterException;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -13,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -157,6 +157,7 @@ public class NFAImpl implements NFA {
         u.setTransition(uInitialState, EPS, this.initialState);
         u.setTransition(uInitialState, EPS, a.getInitialState() + stateShift);
 
+        debug("%s\n∪\n%s\n=>\n%s", this, a, u);
         return u;
     }
 
@@ -296,7 +297,25 @@ public class NFAImpl implements NFA {
             }
         }
 
-        var dfa = new DFAImpl(stateCounter.get(), alphabet, F1, q0);
+        // finally, ensure completeness of the DFA
+        int dfaNumStates = stateCounter.get();
+        int sink = dfaNumStates;
+        boolean wasIncomplete = false;
+        for (int q = 0; q < dfaNumStates; q++) {
+            var aq1 = qaq1.get(q);
+            for (Character c : alphabet) {
+                if (!aq1.containsKey(c)) {
+                    aq1.put(c, sink);
+                    wasIncomplete = true;
+                }
+            }
+        }
+        if (wasIncomplete) {
+            dfaNumStates++;
+            qaq1.put(sink, alphabet.stream().collect(Collectors.toMap(c -> c, c -> sink)));
+        }
+
+        var dfa = new DFAImpl(dfaNumStates, alphabet, F1, q0);
         for (Integer q : qaq1.keySet()) {
             var aq1 = qaq1.get(q);
             for (var transition : aq1.entrySet()) {
@@ -305,6 +324,7 @@ public class NFAImpl implements NFA {
                 dfa.setTransition(q, a, q1);
             }
         }
+
         debug("NFA->DFA:\n%s\n=>\n%s", this, dfa);
         return dfa;
     }
@@ -368,6 +388,20 @@ public class NFAImpl implements NFA {
     }
 
     boolean acceptsAnyNonEpsilon() {
+        Set<Integer> fringe = Sets.union(Set.of(initialState), deltaSearch(initialState, s -> s.contains(EPS)));
+
+        while(true) {
+            Set<Integer> prev = fringe;
+            fringe = deltaSearch(fringe, s -> s.stream().anyMatch(c -> c != EPS));
+            if (fringe.isEmpty())
+                return false;
+            if(isAcceptingState(fringe))
+                return true;
+            if(fringe.equals(prev))
+                return false;
+        }
+    }
+    boolean acceptsAnyNonEpsilonX() {
         Set<Character> symbols = new HashSet<>();
         Predicate<Set<Character>> nonEpsilonPredicate = s -> {
             boolean hasNonEpsilon = false;
@@ -389,14 +423,58 @@ public class NFAImpl implements NFA {
         return false;
     }
 
+    /**
+     * find unreachable states
+     */
+    public Set<Integer> getUnreachableStates() {
+        SortedSet<Integer> unreachableStates = new TreeSet<>();
+        boolean found;
+        do {
+            found = false;
+            for (int toState = 0; toState < numStates; toState++) {
+                if (unreachableStates.contains(toState))
+                    continue; //< skip already unreachable!
+                boolean isReachable = false;
+                for (int fromState = 0; fromState < numStates; fromState++) {
+                    if (fromState != toState && (fromState == initialState || !unreachableStates.contains(fromState))) {
+                        Set<Character> s = transitions[fromState][toState];
+                        if (s != null && !s.isEmpty()) {
+                            isReachable = true;
+                            break;
+                        }
+                    }
+                }
+                if (!isReachable) {
+                    unreachableStates.add(toState);
+                    found = true;
+                }
+            }
+        } while (found);
+
+        debug("unreachable states: %s", unreachableStates);
+        return unreachableStates;
+    }
+
     @Override
     public Boolean acceptsEpsilonOnly() {
         return acceptsEpsilon() && !acceptsAnyNonEpsilon();
+//        if (!acceptsEpsilon()) {
+//            return false;
+//        }
+//        Set<Integer> reachableAcceptingStates = new HashSet<>(acceptingStates);
+//        reachableAcceptingStates.removeAll(getUnreachableStates());
+//        if (!reachableAcceptingStates.isEmpty()) {
+//            return false;
+//        }
+//        // additionally, check the case of accepting initialState with loops
+//        return !acceptingStates.contains(initialState)
+//                || !deltaSearch(initialState, s -> s.stream().anyMatch(c -> c != EPS))
+//                    .contains(initialState);
     }
 
     @Override
     public Boolean acceptsEpsilon() {
-        return accepts("");
+        return acceptingStates.contains(initialState) || accepts("");
     }
 
     @Override
@@ -418,6 +496,7 @@ public class NFAImpl implements NFA {
     public String toString() {
         return toString("N=(S={0..%d}, Σ=%s, δ=%s, s₀=%s, F=%s)");
     }
+
     protected String toString(String format) {
         return String.format(format,
                 numStates - 1,

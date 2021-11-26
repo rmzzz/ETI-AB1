@@ -4,7 +4,6 @@ import ab1.DFA;
 import ab1.NFA;
 import ab1.exceptions.IllegalCharacterException;
 
-import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
