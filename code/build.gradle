@@ -34,4 +34,5 @@ task zip(type: Zip) {
 
 tasks.withType(JavaCompile) {
     options.compilerArgs += ['-Xlint:none']
+    options.encoding = "UTF-8"
 }

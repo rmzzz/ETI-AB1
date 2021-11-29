@@ -5,6 +5,7 @@ import ab1.NFA;
 import ab1.exceptions.IllegalCharacterException;
 
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -342,31 +343,44 @@ public class NFAImpl implements NFA {
      * @return set of next states reachable from {@code fromStates} according to {@code transitionPredicate}
      */
     Set<Integer> deltaSearch(Set<Integer> fromStates, Predicate<Set<Character>> transitionPredicate) {
-        return deltaSearch(fromStates, transitionPredicate, new HashSet<>());
-    }
-
-    Set<Integer> deltaSearch(Set<Integer> fromStates, Predicate<Set<Character>> transitionPredicate, Set<Integer> visitedStates) {
+//        return deltaSearch(fromStates, transitionPredicate, new HashSet<>());
+//    }
+//
+//    Set<Integer> deltaSearch(Set<Integer> fromStates, Predicate<Set<Character>> transitionPredicate, Set<Integer> visitedStates) {
+        Set<Integer> expandedFrom = expandEpsilonJumps(fromStates);
         Set<Integer> next = new HashSet<>();
-        Set<Integer> epsilonJumps = new HashSet<>();
-        for (int from : fromStates) {
+        for (int from : expandedFrom) {
             for (int to = 0; to < numStates; to++) {
                 Set<Character> s = transitions[from][to];
                 if (s != null) {
                     if (transitionPredicate.test(s)) {
                         next.add(to);
                     }
-                    if (s.contains(EPS)) {
-                        epsilonJumps.add(to);
+                }
+            }
+        }
+        //visitedStates.addAll(fromStates);
+//        epsilonJumps.removeAll(visitedStates);
+//        if (!epsilonJumps.isEmpty()) {
+//            next.addAll(deltaSearch(epsilonJumps, transitionPredicate, visitedStates));
+//        }
+        return expandEpsilonJumps(next);
+    }
+    Set<Integer> expandEpsilonJumps(Set<Integer> states) {
+        Set<Integer> result = new HashSet<>(states);
+        Deque<Integer> expandableStates = new LinkedList<>(result);
+        while (!expandableStates.isEmpty()) {
+            int from = expandableStates.pop();
+            for(int to = 0; to < numStates; to++) {
+                var s = transitions[from][to];
+                if(s != null && s.contains(EPS)) {
+                    if(result.add(to)) {
+                        expandableStates.push(to);
                     }
                 }
             }
         }
-        visitedStates.addAll(fromStates);
-        epsilonJumps.removeAll(visitedStates);
-        if (!epsilonJumps.isEmpty()) {
-            next.addAll(deltaSearch(epsilonJumps, transitionPredicate, visitedStates));
-        }
-        return next;
+        return result;
     }
 
     @Override
