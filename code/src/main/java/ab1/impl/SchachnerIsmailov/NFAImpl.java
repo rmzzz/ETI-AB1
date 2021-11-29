@@ -182,8 +182,8 @@ public class NFAImpl implements NFA {
      */
     @Override
     public NFA minus(NFA a) {
-        var res = this.intersection(a.complement());
-        //var res = this.complement().union(a).complement();
+        //var res = this.intersection(a.complement());
+        var res = this.complement().union(a).complement();
         debug("%s\n\\\n%s\n=>\n%s", this, a, res);
         return res;
     }
@@ -299,36 +299,63 @@ public class NFAImpl implements NFA {
             }
         }
 
-        // finally, ensure completeness of the DFA
-        int dfaNumStates = stateCounter.get();
+        var iDfa = new DFAImpl(stateCounter.get(), alphabet, F1, q0);
+        iDfa.setTransitions(qaq1);
+
+        var dfa = toCompleteDFA(iDfa);
+        debug("NFA->DFA:\n%s\n=>\n%s", this, dfa);
+        return dfa;
+    }
+
+    static DFA toCompleteDFA(DFA dfa) {
+        int dfaNumStates = dfa.getNumStates();
         int sink = dfaNumStates;
-        boolean wasIncomplete = false;
+        boolean wasComplete = true;
+        Map<Integer, Map<Character, Integer>> qaq1 = new HashMap<>();
+        Set<Character> alphabet = dfa.getAlphabet();
+        Set<Character>[][] dfaTransitions = dfa.getTransitions();
         for (int q = 0; q < dfaNumStates; q++) {
-            var aq1 = qaq1.get(q);
+            Map<Character, Integer> aq1 = new LinkedHashMap<>();
+            qaq1.put(q, aq1);
+            for(int q1 = 0; q1 < dfaNumStates; q1++) {
+                Set<Character> s = dfaTransitions[q][q1];
+                if(s != null) {
+                    for(Character c : s){
+                        aq1.put(c, q1);
+                    }
+                }
+            }
+
             for (Character c : alphabet) {
                 if (!aq1.containsKey(c)) {
                     aq1.put(c, sink);
-                    wasIncomplete = true;
+                    wasComplete = false;
                 }
             }
         }
-        if (wasIncomplete) {
-            dfaNumStates++;
-            qaq1.put(sink, alphabet.stream().collect(Collectors.toMap(c -> c, c -> sink)));
+        if (wasComplete) {
+            return dfa; ///< already complete
         }
 
-        var dfa = new DFAImpl(dfaNumStates, alphabet, F1, q0);
+        dfaNumStates++;
+        qaq1.put(sink, alphabet.stream().collect(Collectors.toMap(c -> c, c -> sink)));
+
+        var completeDFA = new DFAImpl(dfaNumStates, alphabet, dfa.getAcceptingStates(), dfa.getInitialState());
+        completeDFA.copyTransitions(dfa.getTransitions());
+        completeDFA.setTransitions(qaq1);
+
+        return completeDFA;
+    }
+
+    void setTransitions(Map<Integer, Map<Character, Integer>> qaq1) {
         for (Integer q : qaq1.keySet()) {
             var aq1 = qaq1.get(q);
             for (var transition : aq1.entrySet()) {
                 Character a = transition.getKey();
                 Integer q1 = transition.getValue();
-                dfa.setTransition(q, a, q1);
+                setTransition(q, a, q1);
             }
         }
-
-        debug("NFA->DFA:\n%s\n=>\n%s", this, dfa);
-        return dfa;
     }
 
     Set<Integer> deltaSearch(Integer fromState, Predicate<Set<Character>> transitionPredicate) {

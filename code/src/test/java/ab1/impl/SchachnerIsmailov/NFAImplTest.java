@@ -1,5 +1,6 @@
 package ab1.impl.SchachnerIsmailov;
 
+import ab1.DFA;
 import ab1.NFA;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,8 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -102,7 +105,48 @@ class NFAImplTest {
     }
 
     @Test
-    void testEquals() {
+    void subSetN5() {
+        var n5 = createNFA5();
+        assertTrue(n5.subSetOf(n5));
+    }
+
+    @Test
+    void subSetD5() {
+        var d5 = createDFA5();
+        assertTrue(d5.subSetOf(d5));
+    }
+
+    @Test
+    void testN5EqualsD5() {
+        var n5 = createNFA5();
+        var d5 = createDFA5();
+        System.out.println(n5);
+        System.out.println(d5);
+        assertTrue(
+                n5.equals(d5));
+    }
+
+    @Test
+    void testBigNFA() {
+        Set<Character> alphabet = IntStream.range('a', 'z'+1).mapToObj(i -> (char) i).collect(Collectors.toSet());
+        int numStates = 100;
+        Set<Integer> acceptingStates = Set.of(0, 99);
+        NFA n = factory.createNFA(numStates, alphabet, acceptingStates, 0);
+        for (int i = 0; i < numStates; i++) {
+            for (int j = 0; j < numStates; j++) {
+                for(Character c : alphabet) {
+                    if((i + j + c) % 47 == 0) {
+                        n.setTransition(i, c, j);
+                    }
+                }
+            }
+        }
+        //System.out.println(n);
+        assertFalse(n.acceptsNothing());
+        assertTrue(n.acceptsEpsilon());
+        assertFalse(n.acceptsEpsilonOnly());
+        assertEquals(n, n.toDFA());
+        assertTrue(n.accepts("zu"));
     }
 
     public NFA createNFA7() {
@@ -120,6 +164,36 @@ class NFAImplTest {
         n7.setTransition(2, 'b', 4);
         n7.setTransition(3, 'b', 2);
         return n7;
+    }
+
+    public NFA createNFA5() {
+        Set<Integer> accept = new TreeSet<Integer>();
+        accept.add(0);
+        accept.add(1);
+
+        var n5 = factory.createNFA(2, chars, accept, 0);
+
+        n5.setTransition(0, 'a', 0);
+        n5.setTransition(0, 'b', 0);
+        n5.setTransition(1, 'c', 1);
+        n5.setTransition(0, null, 1);
+
+        return n5;
+    }
+
+    public DFA createDFA5() {
+        Set<Integer> accept = new TreeSet<Integer>();
+        accept.add(0);
+        accept.add(1);
+
+        var d5 = factory.createDFA(2, chars, accept, 0);
+
+        d5.setTransition(0, 'a', 0);
+        d5.setTransition(0, 'b', 0);
+        d5.setTransition(0, 'c', 1);
+        d5.setTransition(1, 'c', 1);
+
+        return d5;
     }
 
 }

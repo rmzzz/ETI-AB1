@@ -43,11 +43,13 @@ public class DFAImpl extends NFAImpl implements DFA {
      */
     @Override
     public NFA complement() {
-        Set<Integer> inverseAcceptingStates = IntStream.range(0, numStates).boxed()
-                .filter(s -> !acceptingStates.contains(s))
+        DFA completeDfa = toCompleteDFA(this);
+        Set<Integer> inverseAcceptingStates = IntStream.range(0, completeDfa.getNumStates()).boxed()
+                .filter(s -> !completeDfa.getAcceptingStates().contains(s))
                 .collect(Collectors.toSet());
-        var res = new DFAImpl(numStates, alphabet, inverseAcceptingStates, initialState);
-        res.copyTransitions(transitions, 0);
+        var res = new DFAImpl(completeDfa.getNumStates(), completeDfa.getAlphabet(), inverseAcceptingStates, completeDfa.getInitialState());
+        res.copyTransitions(completeDfa.getTransitions());
+        debug("NOT %s\n => %s", this, res);
         return res;
     }
 
