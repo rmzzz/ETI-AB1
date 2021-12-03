@@ -196,4 +196,20 @@ class NFAImplTest {
         return d5;
     }
 
+    public DFA createDFA6() {
+        Set<Integer> accept = new TreeSet<Integer>();
+        accept.add(0);
+        accept.add(1);
+
+        DFA d6 = factory.createDFA(2, chars, accept, 0);
+
+        d6.setTransition(0, 'a', 0);
+        d6.setTransition(0, 'b', 0);
+        d6.setTransition(0, 'c', 1);
+        d6.setTransition(1, 'c', 1);
+        d6.setTransition(1, 'a', 0);
+        d6.setTransition(1, 'b', 0);
+
+        return d6;
+    }
 }
