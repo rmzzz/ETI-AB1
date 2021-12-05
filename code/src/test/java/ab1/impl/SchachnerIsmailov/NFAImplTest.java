@@ -127,6 +127,15 @@ class NFAImplTest {
     }
 
     @Test
+    void toDfa7() {
+        var n7 = createNFA7();
+        System.out.println(n7);
+        var d7 = n7.toDFA();
+        System.out.println(d7);
+        assertEquals(n7, d7);
+    }
+
+    @Test
     void testBigNFA() {
         Set<Character> alphabet = IntStream.range('a', 'z'+1).mapToObj(i -> (char) i).collect(Collectors.toSet());
         int numStates = 100;

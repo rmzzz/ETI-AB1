@@ -4,57 +4,45 @@ import ab1.DFA;
 import ab1.NFA;
 import ab1.exceptions.IllegalCharacterException;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class DFAImpl extends NFAImpl implements DFA {
 
-    public static int currentState;
-
+    int currentState;
 
     public DFAImpl(int numStates, Set<Character> characters, Set<Integer> acceptingStates, int initialState) {
         super(numStates, characters, acceptingStates, initialState);
-
+        currentState = initialState;
     }
-
-
 
     @Override
     public void reset() {
     currentState = initialState;
     }
 
-   //public void setCurrentState(int currentState){
-
-    //}
-
     @Override
     public int getCurrentState() {
-        //for (int i = 0; i<= this.getNumStates(); i++){
-        //}
-
         return currentState;
     }
 
     @Override
     public int doStep(char c) throws IllegalCharacterException, IllegalStateException {
         int curr = getCurrentState();
-        if (this.getAlphabet().contains(c)){
-            return this.getNextState(curr,c);
-        }
-        else throw new IllegalCharacterException();
-
+        Integer next = this.getNextState(curr,c);
+        if(next != null)
+            return currentState = next;
+        throw new IllegalStateException();
     }
 
     @Override
     public Integer getNextState(int s, char c) throws IllegalCharacterException, IllegalStateException {
         int nextState=0;
         if (this.getAlphabet().contains(c)){
-            if (s <= this.getNumStates() && this.getAcceptingStates().contains(s)){
-                while (!this.getTransitions()[s][nextState].contains(c)){ //??
+            if (s < this.getNumStates()){
+                while (this.getTransitions()[s][nextState] == null
+                        || !this.getTransitions()[s][nextState].contains(c)){ //??
                     nextState++;
                     if (nextState >= numStates){
                         return null;
@@ -69,9 +57,8 @@ public class DFAImpl extends NFAImpl implements DFA {
 
     @Override
     public boolean isInAcceptingState() {
-        if (this.getCurrentState() <= numStates) return true;
-        else return false;
-        }
+        return getAcceptingStates().contains(currentState);
+    }
 
     /**
      * see VO 2021WS-NFA p22/24
@@ -93,27 +80,8 @@ public class DFAImpl extends NFAImpl implements DFA {
         return this;
     }
 
-//    @Override
-//    public boolean equals(Object o) {
-//        if (this == o)
-//            return true;
-//        if (!(o instanceof NFA)) ///< this is correct, DFA can be compared against NFA
-//            return false;
-//        DFA dfa = ((NFA) o).toDFA();
-//
-//        boolean isEqual = numStates == dfa.getNumStates()
-//                && initialState == dfa.getInitialState()
-//                && getAlphabet().equals(dfa.getAlphabet())
-//                && getAcceptingStates().equals(dfa.getAcceptingStates())
-//                && Arrays.deepEquals(transitions, dfa.getTransitions());
-//        debug("%s\n==?\n%s\n=>%b", this, dfa, isEqual);
-//        return isEqual;
-//    }
-
     @Override
     public String toString() {
         return toString("M=(Q={0..%d}, Σ=%s, δ=%s, q₀=%s, F=%s)");
     }
-
-
 }

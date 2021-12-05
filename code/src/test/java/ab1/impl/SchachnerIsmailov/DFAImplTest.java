@@ -28,13 +28,14 @@ class DFAImplTest {
         var d = createDFA5();
         assertEquals(0, d.getInitialState());
         assertEquals(0, d.getCurrentState());
-        assertEquals(1, d.doStep('a'));
-        assertEquals(1, d.getInitialState());
+        assertEquals(1, d.doStep('c'));
+        assertEquals(1, d.getCurrentState());
     }
 
     @Test
     void doStep() {
         var d = createDFA6();
+        System.out.println(d);
         assertEquals(0, d.doStep('a'));
         assertEquals(0, d.doStep('b'));
         assertEquals(1, d.doStep('c'));
@@ -55,18 +56,18 @@ class DFAImplTest {
 
     @Test
     void isInAcceptingState() {
-        var d = createDFA6();
-        assertFalse(d.isInAcceptingState());
+        var d = createDFA5();
+        assertTrue(d.isInAcceptingState());
         assertEquals(0, d.doStep('a'));
-        assertFalse(d.isInAcceptingState());
+        assertTrue(d.isInAcceptingState());
         assertEquals(0, d.doStep('b'));
-        assertFalse(d.isInAcceptingState());
-        assertEquals(1, d.doStep('c'));
         assertTrue(d.isInAcceptingState());
         assertEquals(1, d.doStep('c'));
         assertTrue(d.isInAcceptingState());
-        assertEquals(0, d.doStep('a'));
-        assertFalse(d.isInAcceptingState());
+        assertEquals(1, d.doStep('c'));
+        assertTrue(d.isInAcceptingState());
+        assertThrows(IllegalStateException.class, () -> d.doStep('a'));
+        assertTrue(d.isInAcceptingState());
     }
 
     @Test

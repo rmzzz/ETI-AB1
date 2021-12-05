@@ -370,10 +370,6 @@ public class NFAImpl implements NFA {
      * @return set of next states reachable from {@code fromStates} according to {@code transitionPredicate}
      */
     Set<Integer> deltaSearch(Set<Integer> fromStates, Predicate<Set<Character>> transitionPredicate) {
-//        return deltaSearch(fromStates, transitionPredicate, new HashSet<>());
-//    }
-//
-//    Set<Integer> deltaSearch(Set<Integer> fromStates, Predicate<Set<Character>> transitionPredicate, Set<Integer> visitedStates) {
         Set<Integer> expandedFrom = expandEpsilonJumps(fromStates);
         Set<Integer> next = new HashSet<>();
         for (int from : expandedFrom) {
@@ -386,13 +382,9 @@ public class NFAImpl implements NFA {
                 }
             }
         }
-        //visitedStates.addAll(fromStates);
-//        epsilonJumps.removeAll(visitedStates);
-//        if (!epsilonJumps.isEmpty()) {
-//            next.addAll(deltaSearch(epsilonJumps, transitionPredicate, visitedStates));
-//        }
         return expandEpsilonJumps(next);
     }
+
     Set<Integer> expandEpsilonJumps(Set<Integer> states) {
         Set<Integer> result = new HashSet<>(states);
         Deque<Integer> expandableStates = new LinkedList<>(result);
@@ -444,75 +436,9 @@ public class NFAImpl implements NFA {
         }
     }
 
-    boolean acceptsAnyNonEpsilonX() {
-        Set<Character> symbols = new HashSet<>();
-        Predicate<Set<Character>> nonEpsilonPredicate = s -> {
-            boolean hasNonEpsilon = false;
-            for (Character c : s) {
-                if (c != EPS) {
-                    symbols.add(c);
-                    hasNonEpsilon = true;
-                }
-            }
-            return hasNonEpsilon;
-        };
-        Set<Integer> fringe = Set.of(initialState);
-        while (!fringe.isEmpty()) {
-            fringe = deltaSearch(fringe, nonEpsilonPredicate);
-            if (!symbols.isEmpty() && fringe.stream().anyMatch(acceptingStates::contains)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * find unreachable states
-     */
-    public Set<Integer> getUnreachableStates() {
-        SortedSet<Integer> unreachableStates = new TreeSet<>();
-        boolean found;
-        do {
-            found = false;
-            for (int toState = 0; toState < numStates; toState++) {
-                if (unreachableStates.contains(toState))
-                    continue; //< skip already unreachable!
-                boolean isReachable = false;
-                for (int fromState = 0; fromState < numStates; fromState++) {
-                    if (fromState != toState && (fromState == initialState || !unreachableStates.contains(fromState))) {
-                        Set<Character> s = transitions[fromState][toState];
-                        if (s != null && !s.isEmpty()) {
-                            isReachable = true;
-                            break;
-                        }
-                    }
-                }
-                if (!isReachable) {
-                    unreachableStates.add(toState);
-                    found = true;
-                }
-            }
-        } while (found);
-
-        debug("unreachable states: %s", unreachableStates);
-        return unreachableStates;
-    }
-
     @Override
     public Boolean acceptsEpsilonOnly() {
         return acceptsEpsilon() && !acceptsAnyNonEpsilon();
-//        if (!acceptsEpsilon()) {
-//            return false;
-//        }
-//        Set<Integer> reachableAcceptingStates = new HashSet<>(acceptingStates);
-//        reachableAcceptingStates.removeAll(getUnreachableStates());
-//        if (!reachableAcceptingStates.isEmpty()) {
-//            return false;
-//        }
-//        // additionally, check the case of accepting initialState with loops
-//        return !acceptingStates.contains(initialState)
-//                || !deltaSearch(initialState, s -> s.stream().anyMatch(c -> c != EPS))
-//                    .contains(initialState);
     }
 
     @Override
