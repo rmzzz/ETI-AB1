@@ -4,39 +4,74 @@ import ab1.DFA;
 import ab1.NFA;
 import ab1.exceptions.IllegalCharacterException;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class DFAImpl extends NFAImpl implements DFA {
+
+    public static int currentState;
+
+
     public DFAImpl(int numStates, Set<Character> characters, Set<Integer> acceptingStates, int initialState) {
         super(numStates, characters, acceptingStates, initialState);
+
     }
+
+
 
     @Override
     public void reset() {
-
+    currentState = initialState;
     }
+
+   //public void setCurrentState(int currentState){
+
+    //}
 
     @Override
     public int getCurrentState() {
-        return 0;
+        //for (int i = 0; i<= this.getNumStates(); i++){
+        //}
+
+        return currentState;
     }
 
     @Override
     public int doStep(char c) throws IllegalCharacterException, IllegalStateException {
-        return 0;
+        int curr = getCurrentState();
+        if (this.getAlphabet().contains(c)){
+            return this.getNextState(curr,c);
+        }
+        else throw new IllegalCharacterException();
+
     }
 
     @Override
     public Integer getNextState(int s, char c) throws IllegalCharacterException, IllegalStateException {
-        return null;
+        int nextState=0;
+        if (this.getAlphabet().contains(c)){
+            if (s <= this.getNumStates() && this.getAcceptingStates().contains(s)){
+                while (!this.getTransitions()[s][nextState].contains(c)){ //??
+                    nextState++;
+                    if (nextState >= numStates){
+                        return null;
+                    }
+                }
+                return nextState;
+            }
+            else throw new IllegalStateException();
+        }
+        else throw new IllegalCharacterException();
     }
 
     @Override
     public boolean isInAcceptingState() {
-        return false;
-    }
+        if (this.getCurrentState() <= numStates) return true;
+        else return false;
+        }
 
     /**
      * see VO 2021WS-NFA p22/24
